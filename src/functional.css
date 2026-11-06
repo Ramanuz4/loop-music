@@ -3,10 +3,6 @@
   padding: 0;
 }
 
-.track-art .play-button > svg {
-  transform: translateX(2px);
-}
-
 .track-info .like-button {
   display: grid;
   place-items: center;

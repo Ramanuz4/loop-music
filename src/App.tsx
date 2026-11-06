@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, AudioLines, BadgeCheck, BarChart3, Check,
   ChevronDown, CircleHelp, Disc3, Headphones, Heart, LayoutDashboard, LogOut,
@@ -58,16 +59,23 @@ function loadAudioFile(id: number): Promise<Blob | null> {
 }
 
 function App() {
-  const [user, setUser] = useState<User | null>(readUser);
-  const [uploads, setUploads] = useState<Track[]>(readUploads);
+  const [user, setUser] = useState<User | null>(null);
+  const [uploads, setUploads] = useState<Track[]>([]);
+  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
   const [playing, setPlaying] = useState<number | null>(null);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
   const [playbackError, setPlaybackError] = useState('');
   const [query, setQuery] = useState('');
   const [genre, setGenre] = useState('All sounds');
   const audioRef = useRef<HTMLAudioElement>(null);
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname() ?? '/';
+  const router = useRouter();
+
+  useEffect(() => {
+    setUser(readUser());
+    setUploads(readUploads());
+    setHasLoadedStorage(true);
+  }, []);
 
   const allTracks = useMemo(() => [...uploads, ...initialTracks], [uploads]);
   const filteredTracks = allTracks.filter((track) => {
@@ -77,15 +85,26 @@ function App() {
 
   useEffect(() => {
     let frame = 0;
-    if (location.pathname === '/' && location.hash) {
+    if (pathname === '/' && window.location.hash) {
       frame = window.requestAnimationFrame(() => {
-        document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
-    } else if (location.pathname !== '/') {
+    } else if (pathname !== '/') {
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
     return () => window.cancelAnimationFrame(frame);
-  }, [location.pathname, location.hash, location.key]);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!hasLoadedStorage) return;
+    if (pathname === '/creator' && user?.role !== 'creator') {
+      router.replace(user ? '/' : '/login');
+    } else if (pathname === '/admin' && user?.role !== 'admin') {
+      router.replace(user ? '/' : '/login');
+    } else if (!['/', '/login', '/signup', '/creator', '/admin'].includes(pathname)) {
+      router.replace('/');
+    }
+  }, [hasLoadedStorage, pathname, router, user]);
 
   useEffect(() => {
     if (!playbackUrl) return;
@@ -105,12 +124,12 @@ function App() {
   function login(nextUser: User) {
     localStorage.setItem('loop-user', JSON.stringify(nextUser));
     setUser(nextUser);
-    navigate(nextUser.role === 'creator' ? '/creator' : nextUser.role === 'admin' ? '/admin' : '/');
+    router.push(nextUser.role === 'creator' ? '/creator' : nextUser.role === 'admin' ? '/admin' : '/');
   }
   function logout() {
     localStorage.removeItem('loop-user');
     setUser(null);
-    navigate('/');
+    router.push('/');
   }
   function addUpload(track: Track) {
     const next = [track, ...uploads];
@@ -147,14 +166,11 @@ function App() {
       <Header user={user} onLogout={logout} />
       <audio ref={audioRef} src={playbackUrl ?? undefined} hidden onEnded={() => setPlaying(null)} />
       {playbackError && <div className="playback-error" role="status">{playbackError}<button onClick={() => setPlaybackError('')} aria-label="Dismiss message"><X size={14} /></button></div>}
-      <Routes>
-        <Route path="/" element={<Home tracks={filteredTracks} query={query} setQuery={setQuery} genre={genre} setGenre={setGenre} playing={playing} togglePlay={togglePlay} />} />
-        <Route path="/login" element={<AuthPage mode="login" onSubmit={login} />} />
-        <Route path="/signup" element={<AuthPage mode="signup" onSubmit={login} />} />
-        <Route path="/creator" element={user?.role === 'creator' ? <CreatorPage user={user} uploads={uploads} onUpload={addUpload} playing={playing} togglePlay={togglePlay} /> : <Navigate to={user ? '/' : '/login'} replace state={{ from: location.pathname }} />} />
-        <Route path="/admin" element={user?.role === 'admin' ? <AdminPage tracks={allTracks} /> : <Navigate to={user ? '/' : '/login'} replace state={{ from: location.pathname }} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {pathname === '/' && <Home tracks={filteredTracks} query={query} setQuery={setQuery} genre={genre} setGenre={setGenre} playing={playing} togglePlay={togglePlay} />}
+      {pathname === '/login' && <AuthPage key={pathname} mode="login" onSubmit={login} />}
+      {pathname === '/signup' && <AuthPage key={pathname} mode="signup" onSubmit={login} />}
+      {pathname === '/creator' && user?.role === 'creator' && <CreatorPage user={user} uploads={uploads} onUpload={addUpload} playing={playing} togglePlay={togglePlay} />}
+      {pathname === '/admin' && user?.role === 'admin' && <AdminPage tracks={allTracks} />}
       <Footer />
     </div>
   );
@@ -162,24 +178,24 @@ function App() {
 
 function Header({ user, onLogout }: { user: User | null; onLogout: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
+  const pathname = usePathname();
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Link className="brand" to="/" aria-label="Loop home"><span className="brand-mark"><AudioLines size={21} strokeWidth={2.2} /></span><span>loop<span className="brand-dot">.</span></span></Link>
+        <Link className="brand" href="/" aria-label="Loop home"><span className="brand-mark"><AudioLines size={21} strokeWidth={2.2} /></span><span>loop<span className="brand-dot">.</span></span></Link>
         <button className="mobile-menu" aria-label="Toggle navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
         <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`}>
-          <Link className={location.pathname === '/' ? 'nav-active' : ''} onClick={() => setMenuOpen(false)} to="/">Explore</Link>
-          <Link to="/#sounds" onClick={() => setMenuOpen(false)}>Sounds</Link>
-          <Link to="/#how-it-works" onClick={() => setMenuOpen(false)}>How it works</Link>
+          <Link className={pathname === '/' ? 'nav-active' : ''} onClick={() => setMenuOpen(false)} href="/">Explore</Link>
+          <Link href="/#sounds" onClick={() => setMenuOpen(false)}>Sounds</Link>
+          <Link href="/#how-it-works" onClick={() => setMenuOpen(false)}>How it works</Link>
         </nav>
         <div className="header-actions">
           {user ? <>
             <span className="user-greeting">Hey, {user.name.split(' ')[0]}</span>
-            {user.role === 'creator' && <Link className="button button-quiet header-dashboard" to="/creator"><LayoutDashboard size={15} /> Studio</Link>}
-            {user.role === 'admin' && <Link className="button button-quiet header-dashboard" to="/admin"><ShieldCheck size={15} /> Admin</Link>}
+            {user.role === 'creator' && <Link className="button button-quiet header-dashboard" href="/creator"><LayoutDashboard size={15} /> Studio</Link>}
+            {user.role === 'admin' && <Link className="button button-quiet header-dashboard" href="/admin"><ShieldCheck size={15} /> Admin</Link>}
             <button className="icon-button logout-button" title="Log out" onClick={onLogout}><LogOut size={17} /></button>
-          </> : <><Link className="button button-quiet login-button" to="/login">Log in</Link><Link className="button button-dark signup-button" to="/signup">Join Loop <ArrowRight size={15} /></Link></>}
+          </> : <><Link className="button button-quiet login-button" href="/login">Log in</Link><Link className="button button-dark signup-button" href="/signup">Join Loop <ArrowRight size={15} /></Link></>}
         </div>
       </div>
     </header>
@@ -223,9 +239,9 @@ function Home({ tracks, query, setQuery, genre, setGenre, playing, togglePlay }:
       <div className="browse-footer"><span>GOOD SOUND FINDS ITS PEOPLE.</span><span>{tracks.length} sounds to explore</span></div>
     </section>
 
-    <section className="manifesto" id="how-it-works"><div className="manifesto-inner section-wrap"><span className="manifesto-index">01 / THE LOOP IDEA</span><div className="manifesto-content"><h2>Find it.<br /><span className="serif-word">Feel it.</span><br />Make it yours.</h2><p>Skip the endless scroll. Loop brings independent creators and music makers together over sounds worth sharing. One little spark can change everything.</p><Link className="button button-outline" to="/signup">Find your loop <ArrowRight size={16} /></Link></div><div className="manifesto-stamp"><div><Music2 size={26} /><span>GOOD<br />SOUND<br />ONLY</span></div></div></div></section>
+    <section className="manifesto" id="how-it-works"><div className="manifesto-inner section-wrap"><span className="manifesto-index">01 / THE LOOP IDEA</span><div className="manifesto-content"><h2>Find it.<br /><span className="serif-word">Feel it.</span><br />Make it yours.</h2><p>Skip the endless scroll. Loop brings independent creators and music makers together over sounds worth sharing. One little spark can change everything.</p><Link className="button button-outline" href="/signup">Find your loop <ArrowRight size={16} /></Link></div><div className="manifesto-stamp"><div><Music2 size={26} /><span>GOOD<br />SOUND<br />ONLY</span></div></div></div></section>
 
-    <section className="creator-cta section-wrap"><div className="creator-cta-art"><div className="cta-wave">{Array.from({ length: 28 }, (_, i) => <span key={i} style={{ height: `${18 + ((i * 17 + 13) % 70)}%` }} />)}</div><span className="cta-art-caption">YOUR SOUND. YOUR TERMS.</span></div><div className="creator-cta-copy"><span className="eyebrow"><span className="eyebrow-line" /> FOR THE MAKERS</span><h2>You make the<br /><span className="serif-word">magic.</span> We make<br />room for it.</h2><p>Put your sounds in front of music makers who are looking for exactly what you do. Keep your rights. Keep making.</p><Link className="button button-dark" to="/signup?role=creator">Meet your people <ArrowRight size={16} /></Link></div></section>
+    <section className="creator-cta section-wrap"><div className="creator-cta-art"><div className="cta-wave">{Array.from({ length: 28 }, (_, i) => <span key={i} style={{ height: `${18 + ((i * 17 + 13) % 70)}%` }} />)}</div><span className="cta-art-caption">YOUR SOUND. YOUR TERMS.</span></div><div className="creator-cta-copy"><span className="eyebrow"><span className="eyebrow-line" /> FOR THE MAKERS</span><h2>You make the<br /><span className="serif-word">magic.</span> We make<br />room for it.</h2><p>Put your sounds in front of music makers who are looking for exactly what you do. Keep your rights. Keep making.</p><Link className="button button-dark" href="/signup?role=creator">Meet your people <ArrowRight size={16} /></Link></div></section>
     <section className="bottom-note section-wrap"><span>INDEPENDENT SOUNDS. ENDLESS POSSIBILITIES.</span><span>MADE WITH FEELING <Heart size={13} fill="currentColor" /></span></section>
   </main>;
 }
@@ -249,16 +265,19 @@ function AuthPage({ mode, onSubmit }: { mode: 'login' | 'signup'; onSubmit: (use
   const isSignup = mode === 'signup';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<Role>(new URLSearchParams(window.location.search).get('role') === 'creator' ? 'creator' : 'listener');
+  const [role, setRole] = useState<Role>('listener');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const router = useRouter();
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('role') === 'creator') setRole('creator');
+  }, []);
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!email.includes('@')) { setError('Enter a valid email address to continue.'); return; }
     onSubmit({ name: name.trim() || email.split('@')[0], email, role });
   }
   return <main className="auth-page section-wrap">
-    <div className="auth-back"><button className="text-link" onClick={() => navigate(-1)}><ArrowLeft size={15} /> Back</button></div>
+    <div className="auth-back"><button className="text-link" onClick={() => router.back()}><ArrowLeft size={15} /> Back</button></div>
     <div className="auth-layout"><div className="auth-editorial"><div className="eyebrow"><span className="eyebrow-line" /> YOUR PEOPLE ARE HERE</div><h1>{isSignup ? <>A little more<br />room to <span className="serif-word">create.</span></> : <>Good to<br />have you <span className="serif-word">back.</span></>}</h1><p>{isSignup ? 'Join a community that believes the best sounds are still waiting to be found.' : 'Pick up where the good stuff left off.'}</p><div className="auth-decoration"><div className="auth-disc"><span /><span /><span /><i><AudioLines size={19} /></i></div><span className="auth-note">SIDE A — YOU'RE IN GOOD COMPANY</span></div></div>
       <form className="auth-form" onSubmit={submit}><div className="form-kicker">{isSignup ? 'MAKE YOURSELF AT HOME' : 'STEP BACK INTO THE SOUND'}</div><h2>{isSignup ? 'Create your account' : 'Welcome back'}</h2><p className="form-subtitle">{isSignup ? 'A few details and you’re in.' : 'Enter your email to continue.'}</p>
         {isSignup && <label className="field-label">Your name<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="What should we call you?" /></label>}
@@ -267,7 +286,7 @@ function AuthPage({ mode, onSubmit }: { mode: 'login' | 'signup'; onSubmit: (use
         {isSignup && <div className="field-label role-label">I’m here as a <span className="role-options">{(['listener', 'creator'] as Role[]).map((item) => <button type="button" className={role === item ? 'role-selected' : ''} onClick={() => setRole(item)} key={item}>{item === 'listener' ? <Headphones size={14} /> : <Music2 size={14} />}{item}</button>)}</span></div>}
         {error && <div className="form-error">{error}</div>}
         <button className="button button-dark auth-submit" type="submit">{isSignup ? 'Create my account' : 'Log in to Loop'} <ArrowRight size={16} /></button>
-        <div className="auth-switch">{isSignup ? 'Already part of the loop?' : 'New around here?'} <Link to={isSignup ? '/login' : '/signup'}>{isSignup ? 'Log in' : 'Make an account'}</Link></div>
+        <div className="auth-switch">{isSignup ? 'Already part of the loop?' : 'New around here?'} <Link href={isSignup ? '/login' : '/signup'}>{isSignup ? 'Log in' : 'Make an account'}</Link></div>
         <div className="demo-login"><span>JUST LOOKING AROUND?</span><p>Try a demo space</p><div><button type="button" onClick={() => onSubmit({ name: 'Jamie Creator', email: 'creator@loop.demo', role: 'creator' })}><Music2 size={13} /> Creator</button><button type="button" onClick={() => onSubmit({ name: 'Alex Admin', email: 'admin@loop.demo', role: 'admin' })}><ShieldCheck size={13} /> Admin</button></div></div>
       </form>
     </div>
@@ -334,6 +353,6 @@ function AdminPage({ tracks }: { tracks: Track[] }) {
   </main>;
 }
 
-function Footer() { return <footer className="site-footer"><div className="footer-inner section-wrap"><Link className="brand" to="/"><span className="brand-mark"><AudioLines size={20} /></span><span>loop<span className="brand-dot">.</span></span></Link><span className="footer-line">A LITTLE MORE FEELING IN EVERYTHING.</span><span className="footer-copy">© 2025 LOOP SOUND CO.</span></div></footer>; }
+function Footer() { return <footer className="site-footer"><div className="footer-inner section-wrap"><Link className="brand" href="/"><span className="brand-mark"><AudioLines size={20} /></span><span>loop<span className="brand-dot">.</span></span></Link><span className="footer-line">A LITTLE MORE FEELING IN EVERYTHING.</span><span className="footer-copy">© 2025 LOOP SOUND CO.</span></div></footer>; }
 
 export default App;

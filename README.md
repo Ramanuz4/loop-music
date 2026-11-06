@@ -1,13 +1,14 @@
 # Loop
 
-A responsive React single-page music-loop marketplace concept. Explore and filter sample sounds, upload and play local audio, sign up as a listener or creator, manage a creator catalog, or use the demo admin dashboard. Client-side navigation uses React Router; demo account and upload metadata are stored in localStorage, with audio files stored in IndexedDB.
+A responsive Next.js music-loop marketplace concept. Explore and filter sample sounds, upload and play local audio, sign up as a listener or creator, manage a creator catalog, or use the demo admin dashboard. Demo account and upload metadata are stored in localStorage, with audio files stored in IndexedDB.
 
 ## Run locally
 
-1. Install Node.js (18+ recommended).
+1. Install Node.js 20.9 or newer.
 2. From this folder, install dependencies with `npm install`.
-3. Start the development server with `npm run dev` and open the local address Vite prints.
+3. Start the Next.js development server with `npm run dev` and open the local address it prints.
 4. Check a production build with `npm run build`.
+5. Run the production server with `npm run start` after building.
 
 ## Demo flows
 

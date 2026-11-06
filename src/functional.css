@@ -1,4 +1,30 @@
-/* Interactive controls and SPA section targets */
+/* Control alignment and section targets */
+.track-art .play-button {
+  padding: 0;
+}
+
+.track-art .play-button > svg {
+  transform: translateX(2px);
+}
+
+.track-info .like-button {
+  display: grid;
+  place-items: center;
+}
+
+@media (min-width: 651px) {
+  .header-inner {
+    position: relative;
+  }
+
+  .main-nav {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: 0;
+  }
+}
+
 #sounds,
 #how-it-works {
   scroll-margin-top: 92px;

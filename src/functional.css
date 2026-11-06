@@ -1,0 +1,70 @@
+/* Interactive controls and SPA section targets */
+#sounds,
+#how-it-works {
+  scroll-margin-top: 92px;
+}
+
+.upload-drop {
+  position: relative;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+
+.upload-drop:hover,
+.upload-drop:focus-within {
+  background: #f4f2eb;
+  border-color: #9c9b8e;
+}
+
+.upload-drop span {
+  display: grid;
+  gap: 5px;
+}
+
+.upload-drop small {
+  color: #88897f;
+  font-size: 9px;
+}
+
+.upload-drop input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-error {
+  margin: -7px 0 14px;
+  color: #b74432;
+  font-size: 10px;
+}
+
+.playback-error {
+  position: fixed;
+  z-index: 40;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 11px 14px;
+  border: 1px solid #e6c6b3;
+  background: #fff9f3;
+  box-shadow: 0 8px 26px #292b2718;
+  color: #8d4936;
+  font-size: 11px;
+}
+
+.playback-error button {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}

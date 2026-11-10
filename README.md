@@ -1,20 +1,21 @@
-# Loop
+# Loop Music
 
-A responsive Next.js music-loop marketplace concept. Explore and filter sample sounds, upload and play local audio, sign up as a listener or creator, manage a creator catalog, or use the demo admin dashboard. Demo account and upload metadata are stored in localStorage, with audio files stored in IndexedDB.
+A responsive Next.js portal for artists and the Loop team. Artist demo accounts and uploads are browser-local; uploaded audio files are saved in IndexedDB.
 
 ## Run locally
 
 1. Install Node.js 20.9 or newer.
-2. From this folder, install dependencies with `npm install`.
-3. Start the Next.js development server with `npm run dev` and open the local address it prints.
-4. Check a production build with `npm run build`.
-5. Run the production server with `npm run start` after building.
+2. Install dependencies with `npm install`.
+3. Copy `.env.example` to `.env.local` and set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and a random `ADMIN_SESSION_SECRET` of at least 32 bytes.
+4. Start the app with `npm run dev` and open the local address it prints.
+5. Check a production build with `npm run build`.
+
+The local `.env.local` contains private development credentials and must never be committed. Configure the same environment variables in the deployment environment before enabling admin access there. Admin sessions use an eight-hour, signed, HttpOnly cookie.
 
 ## Demo flows
 
-- Create a listener or creator account from **Join Loop**. For a creator-specific signup, choose Creator.
-- Log in and select **Creator** or **Admin** under “Try a demo space” to open those dashboards immediately.
-- The creator upload form accepts MP3, WAV, OGG, M4A, AAC, FLAC, and AIFF files up to 100 MB. Uploaded audio is saved in this browser and can be played from Explore; sample cards only show a preview-state toggle.
-- Authentication and payment processing are demo-only; no server account, hosting, or payment service is connected.
+- Create an artist demo account from **Sign Up** or use the artist demo button.
+- Loop team members can sign in at `/admin/login`. Admin credentials are checked server-side; direct `/admin` routes require a valid session.
+- The artist upload form accepts MP3, WAV, OGG, M4A, AAC, FLAC, and AIFF files up to 100 MB. Uploaded audio is saved in this browser.
 
-All demo data is browser-local. Use **Log out** to switch roles; clear local storage and the site's IndexedDB data to reset saved demo accounts, uploads, and audio files.
+Artist demo authentication and data are browser-local. Admin authentication is configured with server-only environment variables. Admin access should use a dedicated authentication provider, a strong unique password, and rate limiting before production use.

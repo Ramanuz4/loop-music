@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import '../src/styles.css';
 import '../src/functional.css';
+import '../src/console.css';
 
 export const metadata: Metadata = {
-  title: 'Loop — Find your next sound',
-  description: 'Find your next sound on Loop — a home for independent music makers.',
+  title: 'Loop Music — Artist Portal',
+  description: 'Manage your music releases, royalties, payments, and distribution with Loop Music.',
+  icons: null,
 };
 
 export const viewport: Viewport = {

@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, AudioLines, BadgeCheck, BarChart3, Bot, Check,
   ChevronDown, CircleHelp, CreditCard, Disc3, Headphones, Heart, LayoutDashboard, LogOut,
-  CalendarDays, Menu, Music2, Play, Plus, ShieldCheck, SlidersHorizontal, Sparkles,
+  CalendarDays, Menu, Music2, Play, Plus, Search, ShieldCheck, SlidersHorizontal, Sparkles,
   Upload, Users, X, Wallet, CircleDollarSign, FileText, UserRound, LifeBuoy, Settings,
   Radio, ClipboardList, Ticket, Tags, Building2, Send, ExternalLink,
 } from 'lucide-react';
@@ -14,6 +14,16 @@ type User = { name: string; email: string; role: Role };
 type Track = { id: number; title: string; creator: string; category: string; bpm: number; key: string; price: string; color: string; tag: string; bars: number[]; audioAvailable?: boolean };
 
 const genres = ['Ambient', 'Soul', 'Indie', 'Electronic', 'Hip-hop', 'R&B'];
+const sampleTracks: Track[] = [
+  { id: -1, title: 'Soft Focus', creator: 'moss.wav', category: 'Ambient', bpm: 84, key: 'C maj', price: '$12', color: 'sage', tag: 'NEW DROP', bars: [16, 29, 21, 43, 35, 18, 30, 48, 37, 22, 43, 27, 35, 17, 40, 31, 22, 45, 28, 38, 17, 31, 45, 25] },
+  { id: -2, title: 'After Hours', creator: 'Niko June', category: 'Soul', bpm: 92, key: 'F min', price: '$8', color: 'lavender', tag: 'TRENDING', bars: [20, 32, 46, 26, 40, 18, 35, 48, 24, 37, 18, 44, 30, 22, 47, 34, 20, 40, 27, 46, 31, 19, 38, 24] },
+  { id: -3, title: 'Sunroom', creator: 'juniper club', category: 'Indie', bpm: 108, key: 'A maj', price: '$15', color: 'peach', tag: 'STAFF PICK', bars: [25, 45, 30, 18, 40, 28, 47, 21, 37, 17, 44, 29, 38, 20, 47, 32, 22, 39, 17, 45, 29, 36, 20, 42] },
+  { id: -4, title: 'Blue Hour', creator: 'sunroom.fm', category: 'Electronic', bpm: 120, key: 'D min', price: '$10', color: 'blue', tag: 'JUST ADDED', bars: [18, 42, 27, 47, 22, 37, 18, 44, 30, 47, 21, 35, 48, 26, 40, 18, 31, 45, 23, 38, 18, 43, 29, 39] },
+  { id: -5, title: 'Little Things', creator: 'mila miles', category: 'Hip-hop', bpm: 86, key: 'G min', price: '$9', color: 'butter', tag: 'LOVED', bars: [42, 25, 37, 19, 45, 28, 39, 17, 46, 30, 41, 22, 35, 47, 26, 40, 18, 33, 45, 24, 38, 20, 43, 31] },
+  { id: -6, title: 'Off Script', creator: 'lowkey leo', category: 'R&B', bpm: 74, key: 'B min', price: '$11', color: 'rose', tag: 'UNDERGROUND', bars: [25, 36, 18, 46, 32, 20, 41, 27, 48, 22, 34, 17, 42, 29, 38, 19, 46, 30, 22, 40, 26, 48, 31, 18] },
+  { id: -7, title: 'Golden', creator: 'ada lune', category: 'Soul', bpm: 98, key: 'E maj', price: '$10', color: 'butter', tag: 'ON REPEAT', bars: [32, 18, 39, 25, 46, 30, 20, 43, 28, 38, 22, 48, 31, 18, 40, 26, 45, 21, 35, 19, 42, 29, 47, 24] },
+  { id: -8, title: 'Night Drive', creator: 'atlas bloom', category: 'Electronic', bpm: 114, key: 'G min', price: '$13', color: 'blue', tag: 'FRESH FIND', bars: [19, 40, 27, 45, 21, 36, 48, 25, 41, 18, 32, 46, 23, 39, 29, 17, 44, 30, 47, 20, 35, 25, 42, 31] },
+];
 
 function readUser(): User | null {
   try {
@@ -113,7 +123,7 @@ function App() {
       router.replace(user.role === 'admin' ? '/admin' : '/creator');
     } else if (pathname.startsWith('/creator') && user?.role !== 'creator') {
       router.replace('/');
-    } else if (!['/', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/creator') && !pathname.startsWith('/admin')) {
+    } else if (!['/', '/login', '/signup', '/discover'].includes(pathname) && !pathname.startsWith('/creator') && !pathname.startsWith('/admin')) {
       router.replace('/');
     }
   }, [hasLoadedStorage, pathname, router, user]);
@@ -195,6 +205,7 @@ function App() {
       {playbackError && <div className="playback-error" role="status">{playbackError}<button onClick={() => setPlaybackError('')} aria-label="Dismiss message"><X size={14} /></button></div>}
       {pathname === '/' && !user && <EntryPage />}
       {(pathname === '/login' || pathname === '/signup') && <><LoginHeader /><AuthPage key={pathname} mode={pathname === '/signup' ? 'signup' : 'login'} onSubmit={login} /></>}
+      {pathname === '/discover' && <DiscoverPage tracks={[...uploads, ...sampleTracks]} playing={playing} togglePlay={togglePlay} />}
       {pathname === '/admin/login' && <><LoginHeader /><AdminLoginPage onSuccess={adminLogin} /></>}
       {pathname.startsWith('/admin') && pathname !== '/admin/login' && user?.role === 'admin' && <ConsoleLayout user={user} role="admin" onLogout={logout} onSwitchRole={() => login({ ...user, role: 'creator' })} uploadsCount={uploads.length} pathname={pathname}>
         {pathname === '/admin' && <AdminPage tracks={uploads} />}
@@ -217,7 +228,7 @@ function App() {
 }
 
 function LoginHeader() {
-  return <header className="login-header"><Link className="brand" href="/" aria-label="Loop home"><span className="brand-mark"><AudioLines size={21} strokeWidth={2.2} /></span><span>loop<span className="brand-dot">.</span></span></Link><div className="entry-actions"><BookCallLink /><Link className="button button-dark" href="/login">Log In</Link><Link className="button button-outline" href="/signup">Sign Up</Link></div></header>;
+  return <header className="login-header"><Link className="brand" href="/discover" aria-label="Explore Loop songs"><span className="brand-mark"><AudioLines size={21} strokeWidth={2.2} /></span><span>loop<span className="brand-dot">.</span></span></Link><div className="entry-actions"><BookCallLink /><Link className="button button-dark" href="/login">Log In</Link><Link className="button button-outline" href="/signup">Sign Up</Link></div></header>;
 }
 
 function BookCallLink({ entry = false }: { entry?: boolean }) {
@@ -229,7 +240,7 @@ function BookCallLink({ entry = false }: { entry?: boolean }) {
 function EntryPage() {
   return <main className="entry-page"><section className="entry-card">
     <div className="entry-brand-row">
-      <Link className="brand" href="/" aria-label="Loop home"><span className="brand-mark"><AudioLines size={21} /></span><span>loop<span className="brand-dot">.</span></span></Link>
+      <Link className="brand" href="/discover" aria-label="Explore Loop songs"><span className="brand-mark"><AudioLines size={21} /></span><span>loop<span className="brand-dot">.</span></span></Link>
       <span className="entry-vinyl auth-disc" aria-hidden="true"><span /><span /><span /><i><AudioLines size={15} /></i></span>
     </div>
     <span className="entry-label">ARTISTS & LOOP TEAM</span>
@@ -240,6 +251,93 @@ function EntryPage() {
     <div className="entry-team-link">Loop team? <Link href="/admin/login">Admin sign in</Link></div>
     <span className="entry-note">LOOP MUSIC · MADE FOR ARTISTS</span>
   </section></main>;
+}
+
+function TrackCard({ track, index, playing, togglePlay }: { track: Track; index: number; playing: number | null; togglePlay: (id: number) => void }) {
+  const [liked, setLiked] = useState(false);
+
+  return <article className="track-card" style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}>
+    <div className={`track-art art-${track.color}`}>
+      <span className="track-tag">{track.tag}</span>
+      <div className="cover-wave" aria-hidden="true">{track.bars.map((bar, barIndex) => <span key={barIndex} style={{ height: `${bar}px` }} />)}</div>
+      <button className={`play-button${playing === track.id ? ' is-playing' : ''}`} onClick={() => togglePlay(track.id)} aria-label={playing === track.id ? `Pause ${track.title}` : `Play ${track.title}`}>
+        {playing === track.id ? <span>Ⅱ</span> : <Play size={16} fill="currentColor" />}
+      </button>
+    </div>
+    <div className="track-info">
+      <div><h3>{track.title}</h3><span className="track-creator">by {track.creator}</span></div>
+      <button className={`like-button${liked ? ' liked' : ''}`} onClick={() => setLiked((current) => !current)} aria-label={liked ? `Unlike ${track.title}` : `Like ${track.title}`} aria-pressed={liked}>
+        <Heart size={17} fill={liked ? 'currentColor' : 'none'} />
+      </button>
+    </div>
+    <div className="track-meta"><span>{track.category}</span><span>·</span><span>{track.bpm} BPM</span><span>·</span><span>{track.key}</span><span className="track-price">{track.price}</span></div>
+  </article>;
+}
+
+function DiscoverPage({ tracks, playing, togglePlay }: { tracks: Track[]; playing: number | null; togglePlay: (id: number) => void }) {
+  const [query, setQuery] = useState('');
+  const [genre, setGenre] = useState('All sounds');
+  const filteredTracks = tracks.filter((track) => {
+    const matchesQuery = `${track.title} ${track.creator} ${track.category}`.toLowerCase().includes(query.trim().toLowerCase());
+    return matchesQuery && (genre === 'All sounds' || track.category === genre);
+  });
+
+  return <div className="app-shell">
+    <header className="site-header">
+      <div className="header-inner">
+        <Link className="brand" href="/discover" aria-label="Explore Loop songs"><span className="brand-mark"><AudioLines size={19} /></span><span>loop<span className="brand-dot">.</span></span></Link>
+        <div className="header-actions"><Link className="button button-dark dashboard-return-button" href="/creator"><LayoutDashboard size={15} /> <span>Back to dashboard</span><ArrowRight size={14} /></Link></div>
+      </div>
+    </header>
+    <main>
+      <section className="hero section-wrap">
+        <div className="hero-copy">
+          <div className="eyebrow"><span className="eyebrow-line" /> A NEW HOME FOR INDEPENDENT MUSIC</div>
+          <h1>Find your<br />next <span className="serif-word">sound.</span></h1>
+          <p className="hero-description">A place for independent artists to share their music and help new audiences find a sound they love.</p>
+          <div className="hero-proof"><span className="avatar-stack" aria-hidden="true"><i>J</i><i>M</i><i>A</i><i>K</i></span><span><b>Independent by nature.</b><br />Connected through sound.</span></div>
+        </div>
+        <div className="hero-art" aria-label="A spinning Loop Music record">
+          <span className="art-orbit orbit-one" /><span className="art-orbit orbit-two" />
+          <span className="hero-record"><span className="record-groove" /><span className="record-groove groove-two" /><span className="record-groove groove-three" /><span className="record-label"><AudioLines size={22} /><span>LOOP MUSIC</span></span></span>
+          <span className="art-sticker"><Sparkles size={15} /> GOOD<br />SOUNDS<br />TRAVEL</span>
+          <span className="art-caption"><span>INDEPENDENT SOUND / 001</span><strong>Made to be<br />found.</strong></span>
+          <span className="art-note note-one">♪</span><span className="art-note note-two">♫</span>
+        </div>
+        <div className="hero-bottom-label"><span>ARTISTS FIRST, ALWAYS</span><span>SCROLL TO EXPLORE ↓</span></div>
+      </section>
+      <div className="ticker" aria-label="Independent music for every mood"><div className="ticker-track" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => <Fragment key={index}><span>FIND YOUR NEXT SOUND</span> / INDEPENDENT ARTISTS <span>MADE TO BE DISCOVERED</span> / LOOP MUSIC <span>GOOD SOUND FINDS ITS PEOPLE</span> /</Fragment>)}
+      </div></div>
+      <section className="sounds-section section-wrap" id="sounds">
+        <div className="section-heading">
+          <div><div className="eyebrow"><span className="eyebrow-line" /> THE LOOP COLLECTION</div><h2>Sounds worth<br /><span className="serif-word">finding.</span></h2></div>
+          <div className="section-heading-aside"><span>Independent music, made by artists<br className="mobile-break" /> building something of their own.</span><span className="results-count">SHOWING <span>{String(filteredTracks.length).padStart(2, '0')}</span> TRACKS</span></div>
+        </div>
+        <div className="discovery-controls">
+          <div className="genre-tabs" role="group" aria-label="Filter songs by genre">
+            {['All sounds', ...genres].map((item) => <button key={item} className={genre === item ? 'genre-active' : ''} onClick={() => setGenre(item)}>{item}</button>)}
+          </div>
+          <div className="search-box"><Search size={14} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a sound..." aria-label="Search songs or artists" />{query && <button aria-label="Clear search" onClick={() => setQuery('')}><X size={13} /></button>}</div>
+        </div>
+        {filteredTracks.length ? <div className="track-grid">{filteredTracks.map((track, index) => <TrackCard key={track.id} track={track} index={index} playing={playing} togglePlay={togglePlay} />)}</div> : <div className="portal-empty"><Disc3 size={28} /><h2>No sounds found.</h2><p>Try another title, artist, or genre.</p><button className="text-link" onClick={() => { setQuery(''); setGenre('All sounds'); }}>Clear filters <ArrowRight size={15} /></button></div>}
+        <div className="browse-footer"><span>GOOD SOUND FINDS ITS PEOPLE.</span><span>MADE FOR ARTISTS, SHARED WITH EVERYONE.</span></div>
+      </section>
+      <section className="manifesto" id="how-it-works">
+        <div className="manifesto-inner section-wrap">
+          <div className="manifesto-index eyebrow"><span className="eyebrow-line" /> THE LOOP IDEA / 001</div>
+          <div className="manifesto-content"><h2>Music moves<br />when we <span className="serif-word">share it.</span></h2><p>Loop helps independent artists share their music and reach new audiences. Explore new sounds, support the people behind them, and keep good music moving.</p><a className="button button-outline" href="#sounds">Back to the sounds <ArrowRight size={14} /></a></div>
+          <div className="manifesto-stamp"><div><AudioLines size={25} /><span>INDEPENDENT<br />BY NATURE</span></div></div>
+        </div>
+      </section>
+      <section className="creator-cta section-wrap">
+        <div className="creator-cta-art"><span className="hero-record"><span className="record-groove" /><span className="record-groove groove-two" /><span className="record-label"><AudioLines size={19} /><span>YOUR SOUND</span></span></span></div>
+        <div className="creator-cta-copy"><div className="eyebrow"><span className="eyebrow-line" /> FOR THE PEOPLE MAKING MUSIC</div><h2>Make something<br /><span className="serif-word">worth finding.</span></h2><p>Build your artist home on Loop. Upload your music, manage your releases, and let new listeners discover what you make.</p><Link className="button button-dark" href="/signup">Get started <ArrowRight size={14} /></Link></div>
+      </section>
+      <div className="bottom-note section-wrap"><span>GOOD MUSIC IS OUT THERE. GO FIND IT.</span><span><AudioLines size={12} /> LOOP MUSIC · MADE FOR ARTISTS</span></div>
+    </main>
+    <footer><div className="footer-inner section-wrap"><Link className="brand" href="/discover" aria-label="Loop Music home"><span className="brand-mark"><AudioLines size={17} /></span><span>loop<span className="brand-dot">.</span></span></Link><span className="footer-line">INDEPENDENT SOUNDS, SHARED EVERYWHERE</span><span className="footer-copy">© LOOP MUSIC</span></div></footer>
+  </div>;
 }
 
 function AdminAccessPage() {
@@ -360,7 +458,7 @@ function ConsoleLayout({ user, role, onLogout, onSwitchRole, uploadsCount, pathn
     <div className="console-spotlight" ref={spotlightRef} aria-hidden="true" />
     {drawerOpen && <button className="drawer-scrim" aria-label="Close navigation" onClick={() => setDrawerOpen(false)} />}
     <aside className={`console-sidebar ${drawerOpen ? 'drawer-open' : ''}`}>
-      <Link className="console-brand" href={isArtist ? '/creator' : '/admin'}><span className="console-brand-icon"><AudioLines size={19} /></span><span>loop<span>.</span></span></Link>
+      <Link className="console-brand" href="/discover" aria-label="Explore Loop songs"><span className="console-brand-icon"><AudioLines size={19} /></span><span>loop<span>.</span></span></Link>
       <div className="sidebar-account"><span className="account-avatar">{user.name.slice(0, 1).toUpperCase()}</span><span><b>{user.name}</b><small>{isArtist ? 'ARTIST ACCOUNT' : 'ADMIN ACCOUNT'}</small></span><button aria-label="Log out" title="Log out" onClick={onLogout}><LogOut size={15} /></button></div>
       <div className="sidebar-label">{isArtist ? 'ARTIST WORKSPACE' : 'ADMIN CONSOLE'}</div>
       <nav className="console-nav" aria-label={`${isArtist ? 'Artist' : 'Admin'} navigation`}>

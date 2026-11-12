@@ -12,6 +12,8 @@ A responsive Next.js portal for artists and the Loop team. Artist demo accounts 
 
 The local `.env.local` contains private development credentials and must never be committed. Configure the same environment variables in the deployment environment before enabling admin access there. Admin sessions use an eight-hour, signed, HttpOnly cookie.
 
+To grant the Firebase custom `admin` claim to an existing Firebase Auth user, set `ADMIN_EMAIL` to that user's email and add the Firebase service-account values shown in `.env.example`, then run `node scripts/make-admin.mjs`. Keep the service-account private key secret.
+
 ## Demo flows
 
 - Create an artist demo account from **Sign Up** or use the artist demo button.

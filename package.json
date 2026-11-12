@@ -9,6 +9,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "dotenv": "^18.0.10",
+    "firebase": "^13.3.0",
+    "firebase-admin": "^14.5.1",
     "lucide-react": "latest",
     "next": "latest",
     "react": "latest",

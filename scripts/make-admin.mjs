@@ -5,35 +5,60 @@ dotenv.config({ path: ".env.local" });
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 
-const app = initializeApp({
-  credential: cert({
-    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY
-      ?.replace(/\\n/g, "\n"),
-  }),
-});
+const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY
+  ?.replace(/\\n/g, "\n");
+
+const adminEmail = process.env.ADMIN_EMAIL?.trim();
 
 async function makeAdmin() {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL?.trim();
-    if (!adminEmail) {
-      throw new Error(
-        "ADMIN_EMAIL is missing. Set it in .env.local to the email of an existing Firebase user.",
-      );
+    // Validate credentials
+    if (!projectId || !clientEmail || !privateKey) {
+      throw new Error("Firebase Admin credentials are missing.");
     }
 
-    const user = await getAuth(app).getUserByEmail(adminEmail);
+    if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+      throw new Error("ADMIN_EMAIL is missing or invalid.");
+    }
 
-    await getAuth(app).setCustomUserClaims(user.uid, {
+    const app = initializeApp({
+      credential: cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    });
+
+    const auth = getAuth(app);
+
+    // Find the existing Firebase user
+    const user = await auth.getUserByEmail(adminEmail);
+
+    // Assign admin permissions
+    await auth.setCustomUserClaims(user.uid, {
       ...user.customClaims,
       admin: true,
     });
 
-    console.log("Admin privileges successfully assigned!");
-    console.log("Admin UID:", user.uid);
+    // Verify the assigned permissions
+    const updatedUser = await auth.getUser(user.uid);
+
+    if (updatedUser.customClaims?.admin !== true) {
+      throw new Error("Admin permission verification failed.");
+    }
+
+    console.log("--------------------------------");
+    console.log("ADMIN CREATED SUCCESSFULLY!");
+    console.log("Email:", updatedUser.email);
+    console.log("UID:", updatedUser.uid);
+    console.log("Admin:", updatedUser.customClaims.admin);
+    console.log("--------------------------------");
+
   } catch (error) {
-    console.error("Error assigning admin:", error);
+    console.error("ADMIN ASSIGNMENT FAILED!");
+    console.error(error);
     process.exitCode = 1;
   }
 }
